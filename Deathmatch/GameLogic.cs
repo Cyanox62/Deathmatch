@@ -13,7 +13,7 @@ namespace Deathmatch
 {
 	public partial class EventHandler
 	{
-		public void StartRound()
+		private void StartRound()
 		{
 			foreach (Player player in PluginManager.Manager.Server.GetPlayers())
 			{
@@ -43,11 +43,8 @@ namespace Deathmatch
 				10, false);
 		}
 
-		public void SpawnPlayer(Player player, bool giveGracePeriod)
+		private void SpawnPlayer(Player player, bool giveGracePeriod)
 		{
-			if (!Plugin.pKills.ContainsKey(player.SteamId))
-				Plugin.pKills.Add(player.SteamId, 0);
-
 			if (giveGracePeriod)
 			{
 				GrantGracePeriod(player);
@@ -83,7 +80,7 @@ namespace Deathmatch
 			}
 		}
 
-		public void GrantGracePeriod(Player player)
+		private void GrantGracePeriod(Player player)
 		{
 			player.ChangeRole(Role.CLASSD, false, false);
 			player.Teleport(PluginManager.Manager.Server.Map.GetRandomSpawnPoint(Role.FACILITY_GUARD));
@@ -95,8 +92,11 @@ namespace Deathmatch
 			}, gracePeriod);
 		}
 
-		public void UpdateLeaderboard()
+		private void UpdateLeaderboard()
 		{
+			foreach (Player player in Plugin.pKills.Select(x => FindPlayer(x.Key)).Where(x => x == null))
+				Plugin.pKills.Remove(player.SteamId);
+
 			Plugin.pKills = Plugin.pKills.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
 			broadcast.CallRpcAddElement(
@@ -108,7 +108,7 @@ namespace Deathmatch
 				Timing.In(x => UpdateLeaderboard(), leaderboardUpdateTime);
 		}
 
-		public Player FindPlayer(string steamid)
+		private Player FindPlayer(string steamid)
 		{
 			foreach (Player player in PluginManager.Manager.Server.GetPlayers())
 				if (player.SteamId == steamid)
@@ -116,10 +116,13 @@ namespace Deathmatch
 			return null;
 		}
 
-		public void GamePrep()
+		private void GamePrep()
 		{
 			Plugin.isRoundStarted = true;
 			Plugin.pKills.Clear();
+
+			foreach (Player player in PluginManager.Manager.Server.GetPlayers())
+				Plugin.pKills.Add(player.SteamId, 0);
 
 			foreach (Smod2.API.Door door in PluginManager.Manager.Server.Map.GetDoors()
 				.Where(x => x.Name.ToUpper().Contains("CHECKPOINT") || x.Name.ToUpper().Contains("GATE")))
@@ -141,7 +144,7 @@ namespace Deathmatch
 			}
 		}
 
-		public void CleanItems()
+		private void CleanItems()
 		{
 			Timing.Next(() =>
 			{

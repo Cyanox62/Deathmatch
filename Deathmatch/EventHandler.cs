@@ -32,7 +32,7 @@ namespace Deathmatch
 
 		private List<string> pBlacklist = new List<string>();
 
-		private string BroadcastExplanation = "This is Deathmatch, a custom gamemode. If you have never played it, press [`] or [~] for more info.";
+		private string BroadcastExplanation = "Welcome to Deathmatch, a custom gamemode. If you have never played it, press [`] or [~] for more info.";
 
 		private string ConsoleExplanation =
 			$"Welcome to Deathmatch!\n" +
@@ -63,15 +63,13 @@ namespace Deathmatch
 
 		public void OnPlayerJoin(PlayerJoinEvent ev)
 		{
-			if (Plugin.isToggled)
+			if (Plugin.isToggled && allowDropIn && Plugin.isRoundStarted)
 			{
-				if (allowDropIn)
-				{
-					if (Plugin.isDeathmatch)
-						SpawnPlayer(ev.Player, true);
-					else
-						ev.Player.ChangeRole(Role.FACILITY_GUARD, false);
-				}
+				Plugin.pKills.Add(ev.Player.SteamId, 0);
+				if (Plugin.isDeathmatch)
+					SpawnPlayer(ev.Player, true);
+				else
+					ev.Player.ChangeRole(Role.FACILITY_GUARD, false);
 			}
 		}
 
