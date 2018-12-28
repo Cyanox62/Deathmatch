@@ -8,6 +8,7 @@ using System.Linq;
 using Object = UnityEngine.Object;
 using UnityEngine;
 using Smod2.EventSystem.Events;
+using System;
 
 namespace Deathmatch
 {
@@ -111,7 +112,7 @@ namespace Deathmatch
 					$"<color=#AA9000>1) {FindPlayer(Plugin.pKills.ElementAt(0).Key).Name}: {Plugin.pKills.ElementAt(0).Value}</color>" +
 					(Plugin.pKills.Count > 1 ? $"<color=#888888>\n2) {FindPlayer(Plugin.pKills.ElementAt(1).Key).Name}: {Plugin.pKills.ElementAt(1).Value}</color>" +
 					(Plugin.pKills.Count > 2 ? $"<color=#AA5D00>\n3) {FindPlayer(Plugin.pKills.ElementAt(2).Key).Name}: {Plugin.pKills.ElementAt(2).Value}</color>" : "") : ""),
-					leaderboardUpdateTime, false);
+					Convert.ToUInt32(leaderboardUpdateTime), false);
 			}
 			if (Plugin.isDeathmatch)
 				Timing.In(x => UpdateLeaderboard(), leaderboardUpdateTime);
