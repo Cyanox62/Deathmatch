@@ -12,22 +12,21 @@ using Smod2.EventSystem.Events;
 namespace Deathmatch
 {
 	public partial class EventHandler : IEventHandlerRoundStart, IEventHandlerPlayerJoin, IEventHandlerCheckRoundEnd,
-		IEventHandlerPlayerHurt, IEventHandlerPlayerDie, IEventHandlerTeamRespawn
+		IEventHandlerPlayerHurt, IEventHandlerPlayerDie, IEventHandlerTeamRespawn, IEventHandlerWaitingForPlayers
 	{
 		private Broadcast broadcast;
 		private MTFRespawn cassie;
 
 		private const float cassieDelay = 7.6f;
-		private const float roundStartTime = 30f; // change to config
-		private const float gracePeriod = 5; // make config
-		private const float respawnTime = 8; // make config
-		private const int roundLength = 60; // make config
-		private const int leaderboardUpdateTime = 10; // make config
 
-		private int[] minuteAnnouncements = { 8, 6, 4, 2 }; // make config
-
-		private bool allowDropIn = true; // make config
-		private bool giveMedkitOnKill = true;
+		private float roundStartTime;
+		private float gracePeriod;
+		private float respawnTime;
+		private int roundLength;
+		private int leaderboardUpdateTime;
+		private int[] minuteAnnouncements;
+		private bool allowDropIn;
+		private bool giveMedkitOnKill;
 
 		private Player curAttacker = null;
 
@@ -39,10 +38,22 @@ namespace Deathmatch
 			$"Welcome to Deathmatch!\n" +
 			$"When the round starts you will turn into a Tutorial and will be given weapons. " +
 			$"Your goal is to kill as many other players as you can before time runs out! " +
-			$"If you die, there will be a {respawnTime} second respawn time, you will also have a {gracePeriod} second " +
+			$"If you die, there will be a short respawn time, you will also have a short " +
 			$"grace period after you spawn. You will be told how many at every time you get" +
 			$" a kill in this console. When time runs out, whoever has the most kills wins!\n" +
 			$"Good Luck!";
+
+		public void OnWaitingForPlayers(WaitingForPlayersEvent ev)
+		{
+			roundStartTime = Plugin.instance.GetConfigFloat("dm_start_delay");
+			gracePeriod = Plugin.instance.GetConfigFloat("dm_grace_period");
+			respawnTime = Plugin.instance.GetConfigFloat("dm_respawn_time");
+			roundLength = Plugin.instance.GetConfigInt("dm_round_length");
+			leaderboardUpdateTime = Plugin.instance.GetConfigInt("dm_leaderboard_update");
+			minuteAnnouncements = Plugin.instance.GetConfigIntList("dm_minute_announcements");
+			allowDropIn = Plugin.instance.GetConfigBool("dm_allow_dropin");
+			giveMedkitOnKill = Plugin.instance.GetConfigBool("dm_medkit_on_kill");
+		}
 
 		public void OnRoundStart(RoundStartEvent ev)
 		{

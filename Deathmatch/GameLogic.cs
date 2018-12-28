@@ -26,9 +26,7 @@ namespace Deathmatch
 
 			Plugin.isDeathmatch = true;
 
-			UpdateLeaderboard();
-
-			// start timer for checking round
+			UpdateLeaderboard();     
 		}
 
 		private void EndRound()
