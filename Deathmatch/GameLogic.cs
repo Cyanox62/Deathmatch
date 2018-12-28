@@ -21,6 +21,9 @@ namespace Deathmatch
 				player.SetGodmode(false);
 			}
 
+			int remainder = roundLength % 60;
+			Timing.In(x => AnnounceTimeCheck((roundLength - remainder) / 60, x), remainder);
+
 			Plugin.isDeathmatch = true;
 
 			UpdateLeaderboard();
@@ -30,6 +33,7 @@ namespace Deathmatch
 
 		private void EndRound()
 		{
+			PluginManager.Manager.Logger.Info("", "ending round");
 			Plugin.pKills = Plugin.pKills.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
 			Plugin.isRoundStarted = false;
@@ -37,14 +41,17 @@ namespace Deathmatch
 
 			broadcast.CallRpcAddElement(
 				$"The winner is " +
-				$"{ FindPlayer(Plugin.pKills.ElementAt(0).Key).Name}" +
+				$"{FindPlayer(Plugin.pKills.ElementAt(0).Key).Name}" +
 				$" with " +
-				$"{ Plugin.pKills.ElementAt(0).Value} kills!",
-				10, false);
+				$"{Plugin.pKills.ElementAt(0).Value} kill{(Plugin.pKills.ElementAt(0).Value > 1 ? "s" : "")}!",
+				30, false);
 		}
 
 		private void SpawnPlayer(Player player, bool giveGracePeriod)
 		{
+			if (!Plugin.pKills.ContainsKey(player.SteamId))
+				Plugin.pKills.Add(player.SteamId, 0);
+
 			if (giveGracePeriod)
 			{
 				GrantGracePeriod(player);
@@ -62,6 +69,7 @@ namespace Deathmatch
 					Timing.In(x =>
 					{
 						sync.SetRotation(rot - pObj.GetComponent<PlyMovementSync>().rotation);
+						player.SetCurrentItemIndex(0);
 					}, 0.2f);
 					// fix rotation
 				}
@@ -97,13 +105,16 @@ namespace Deathmatch
 			foreach (Player player in Plugin.pKills.Select(x => FindPlayer(x.Key)).Where(x => x == null))
 				Plugin.pKills.Remove(player.SteamId);
 
-			Plugin.pKills = Plugin.pKills.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
+			if (Plugin.pKills.Count > 0)
+			{
+				Plugin.pKills = Plugin.pKills.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
-			broadcast.CallRpcAddElement(
-				$"<color=#AA9000>1) {FindPlayer(Plugin.pKills.ElementAt(0).Key).Name}: {Plugin.pKills.ElementAt(0).Value}</color>" +
-				(Plugin.pKills.Count > 1 ? $"<color=#888888>\n2) {FindPlayer(Plugin.pKills.ElementAt(1).Key).Name}: {Plugin.pKills.ElementAt(1).Value}</color>" +
-				(Plugin.pKills.Count > 2 ? $"<color=#AA5D00>\n3) {FindPlayer(Plugin.pKills.ElementAt(2).Key).Name}: {Plugin.pKills.ElementAt(2).Value}</color>" : "") : ""),
-				leaderboardUpdateTime, false);
+				broadcast.CallRpcAddElement(
+					$"<color=#AA9000>1) {FindPlayer(Plugin.pKills.ElementAt(0).Key).Name}: {Plugin.pKills.ElementAt(0).Value}</color>" +
+					(Plugin.pKills.Count > 1 ? $"<color=#888888>\n2) {FindPlayer(Plugin.pKills.ElementAt(1).Key).Name}: {Plugin.pKills.ElementAt(1).Value}</color>" +
+					(Plugin.pKills.Count > 2 ? $"<color=#AA5D00>\n3) {FindPlayer(Plugin.pKills.ElementAt(2).Key).Name}: {Plugin.pKills.ElementAt(2).Value}</color>" : "") : ""),
+					leaderboardUpdateTime, false);
+			}
 			if (Plugin.isDeathmatch)
 				Timing.In(x => UpdateLeaderboard(), leaderboardUpdateTime);
 		}
@@ -120,9 +131,6 @@ namespace Deathmatch
 		{
 			Plugin.isRoundStarted = true;
 			Plugin.pKills.Clear();
-
-			foreach (Player player in PluginManager.Manager.Server.GetPlayers())
-				Plugin.pKills.Add(player.SteamId, 0);
 
 			foreach (Smod2.API.Door door in PluginManager.Manager.Server.Map.GetDoors()
 				.Where(x => x.Name.ToUpper().Contains("CHECKPOINT") || x.Name.ToUpper().Contains("GATE")))
@@ -155,9 +163,6 @@ namespace Deathmatch
 
 		private void AnnounceTimeCheck(int minutes, float inaccuracy = 0)
 		{
-			if (minutes == 0)
-				return;
-
 			string cassieLine = minuteAnnouncements.Contains(minutes) ? $"{minutes} MINUTE{(minutes == 1 ? "" : "S")} REMAINING" : "";
 
 			if (minutes == 0)

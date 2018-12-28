@@ -21,12 +21,13 @@ namespace Deathmatch
 		private const float roundStartTime = 30f; // change to config
 		private const float gracePeriod = 5; // make config
 		private const float respawnTime = 8; // make config
-		private const int roundLength = 600; // make config
+		private const int roundLength = 60; // make config
 		private const int leaderboardUpdateTime = 10; // make config
 
 		private int[] minuteAnnouncements = { 8, 6, 4, 2 }; // make config
 
 		private bool allowDropIn = true; // make config
+		private bool giveMedkitOnKill = true;
 
 		private Player curAttacker = null;
 
@@ -65,7 +66,6 @@ namespace Deathmatch
 		{
 			if (Plugin.isToggled && allowDropIn && Plugin.isRoundStarted)
 			{
-				Plugin.pKills.Add(ev.Player.SteamId, 0);
 				if (Plugin.isDeathmatch)
 					SpawnPlayer(ev.Player, true);
 				else
@@ -83,6 +83,9 @@ namespace Deathmatch
 				{
 					Plugin.pKills[curAttacker.SteamId]++;
 					curAttacker.SendConsoleMessage($"You now have {Plugin.pKills[ev.Killer.SteamId]} kills.");
+
+					if (giveMedkitOnKill && !curAttacker.GetInventory().Any(x => x.ItemType == ItemType.MEDKIT))
+						curAttacker.GiveItem(ItemType.MEDKIT);
 				}
 
 				ev.Player.SendConsoleMessage($"You will respawn in {respawnTime} second{(respawnTime != 1 ? "s" : "")}.");

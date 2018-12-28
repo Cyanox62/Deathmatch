@@ -35,7 +35,7 @@ namespace Deathmatch
 		{
 			instance = this;
 
-			Timing.Init(this);
+			Timing.Init(this, Smod2.Events.Priority.Normal, false);
 
 			AddEventHandlers(new EventHandler());
 
