@@ -37,7 +37,8 @@ namespace Deathmatch
 
 			Timing.Init(this);
 
-			AddEventHandlers(new EventHandler());
+			AddEventHandlers(new EventHandler(), Smod2.Events.Priority.High);
+			// setting to high to override mode plugins friends fire
 
 			AddCommands(new[] { "deathmatch", "dm" }, new CommandHandler());
 
