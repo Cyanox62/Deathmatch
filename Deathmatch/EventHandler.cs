@@ -27,6 +27,8 @@ namespace Deathmatch
 		private int[] minuteAnnouncements;
 		private bool allowDropIn;
 		private bool giveMedkitOnKill;
+		private Role lobbyRole;
+		private Role fightRole;
 
 		private Player curAttacker = null;
 
@@ -36,7 +38,7 @@ namespace Deathmatch
 
 		private string ConsoleExplanation =
 			$"Welcome to Deathmatch!\n" +
-			$"When the round starts you will turn into a Tutorial and will be given weapons. " +
+			$"When the round starts you will turn into a different role and will be given weapons. " +
 			$"Your goal is to kill as many other players as you can before time runs out! " +
 			$"If you die, there will be a short respawn time, you will also have a short " +
 			$"grace period after you spawn. You will be told how many at every time you get" +
@@ -53,6 +55,8 @@ namespace Deathmatch
 			minuteAnnouncements = Plugin.instance.GetConfigIntList("dm_minute_announcements");
 			allowDropIn = Plugin.instance.GetConfigBool("dm_allow_dropin");
 			giveMedkitOnKill = Plugin.instance.GetConfigBool("dm_medkit_on_kill");
+			lobbyRole = (Role)Plugin.instance.GetConfigInt("dm_lobby_role");
+			fightRole = (Role)Plugin.instance.GetConfigInt("dm_fight_role");
 		}
 
 		public void OnRoundStart(RoundStartEvent ev)
@@ -80,7 +84,7 @@ namespace Deathmatch
 				if (Plugin.isDeathmatch)
 					SpawnPlayer(ev.Player, true);
 				else
-					ev.Player.ChangeRole(Role.FACILITY_GUARD, false);
+					ev.Player.ChangeRole(lobbyRole, false);
 			}
 		}
 
@@ -111,7 +115,7 @@ namespace Deathmatch
 		{
 			if (Plugin.isToggled && Plugin.isDeathmatch)
 			{
-				// ensure other plugins dont cancel out tutorial damage
+				// ensure other plugins dont cancel out class damage
 				if (pBlacklist.Contains(ev.Player.SteamId))
 					return;
 				pBlacklist.Add(ev.Player.SteamId);

@@ -62,7 +62,7 @@ namespace Deathmatch
 					PlyMovementSync sync = pObj.GetComponent<PlyMovementSync>();
 					float rot = sync.rotation;
 
-					player.ChangeRole(Role.TUTORIAL, false, false);
+					player.ChangeRole(fightRole, false, false);
 
 					Timing.In(x =>
 					{
@@ -73,7 +73,7 @@ namespace Deathmatch
 				}
 				else
 				{
-					player.ChangeRole(Role.TUTORIAL, false, false);
+					player.ChangeRole(fightRole, false, false);
 				}
 
 				player.GiveItem(ItemType.E11_STANDARD_RIFLE);
@@ -144,7 +144,7 @@ namespace Deathmatch
 
 			foreach (Player player in PluginManager.Manager.Server.GetPlayers())
 			{
-				player.ChangeRole(Role.FACILITY_GUARD, false);
+				player.ChangeRole(lobbyRole, false);
 				player.SendConsoleMessage(ConsoleExplanation);
 				player.SetGodmode(true);
 			}

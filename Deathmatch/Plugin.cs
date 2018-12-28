@@ -37,7 +37,9 @@ namespace Deathmatch
 
 			Timing.Init(this, Smod2.Events.Priority.Normal, false);
 
-			AddEventHandlers(new EventHandler());
+			AddEventHandlers(new EventHandler(), Smod2.Events.Priority.High);
+			// Doing this to allow me to override other plugins potentially blocking friendly fire damage,
+			// don't angrylaserboi me
 
 			AddCommands(new[] { "deathmatch", "dm" }, new CommandHandler());
 
@@ -55,6 +57,8 @@ namespace Deathmatch
 			}, SettingType.NUMERIC_LIST, true, "Times in minutes for CASSIE to announce how many more minutes are in the round."));
 			AddConfig(new ConfigSetting("dm_allow_dropin", true, SettingType.BOOL, true, "Allow players to join the game mid round."));
 			AddConfig(new ConfigSetting("dm_medkit_on_kill", true, SettingType.BOOL, true, "Give players a medkit after a kill if they don't have one."));
+			AddConfig(new ConfigSetting("dm_lobby_role", 15, SettingType.NUMERIC, true, "Role ID for players to be before the fight starts."));
+			AddConfig(new ConfigSetting("dm_fight_role", 14, SettingType.NUMERIC, true, "Role ID for players to fight as."));
 		}
 	}
 }
