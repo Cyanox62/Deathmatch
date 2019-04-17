@@ -1,13 +1,9 @@
-﻿using System.Collections.Generic;
-using Smod2;
+﻿using Smod2;
 using scp4aiur;
 using Smod2.API;
-using Smod2.Events;
-using Smod2.EventHandlers;
 using System.Linq;
 using Object = UnityEngine.Object;
 using UnityEngine;
-using Smod2.EventSystem.Events;
 using System;
 
 namespace Deathmatch
@@ -30,20 +26,31 @@ namespace Deathmatch
 			UpdateLeaderboard();     
 		}
 
+		private void ForceEndRound()
+		{
+			PluginManager.Manager.Server.Map.Broadcast(15, "Round ending early, there are not enough players to continue the game.", false);
+			Plugin.isRoundStarted = false;
+			Plugin.isDeathmatch = false;
+			Plugin.pKills.Clear();
+		}
+
 		private void EndRound()
 		{
-			PluginManager.Manager.Logger.Info("", "ending round");
 			Plugin.pKills = Plugin.pKills.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
 			Plugin.isRoundStarted = false;
 			Plugin.isDeathmatch = false;
-
-			broadcast.CallRpcAddElement(
-				$"The winner is " +
-				$"{FindPlayer(Plugin.pKills.ElementAt(0).Key).Name}" +
-				$" with " +
-				$"{Plugin.pKills.ElementAt(0).Value} kill{(Plugin.pKills.ElementAt(0).Value > 1 ? "s" : "")}!",
-				30, false);
+			if (Plugin.pKills.Count > 0)
+			{
+				PluginManager.Manager.Server.Map.Broadcast(
+					30,
+					$"The winner is " +
+					$"<color=#10EE00>{FindPlayer(Plugin.pKills.ElementAt(0).Key).Name}</color>" +
+					$" with " +
+					$"<color=#10EE00>{Plugin.pKills.ElementAt(0).Value} kill{(Plugin.pKills.ElementAt(0).Value > 1 ? "s" : "")}!</color>",
+					false);
+			}
+			Plugin.pKills.Clear();
 		}
 
 		private void SpawnPlayer(Player player, bool giveGracePeriod)
@@ -68,7 +75,19 @@ namespace Deathmatch
 					Timing.In(x =>
 					{
 						sync.SetRotation(rot - pObj.GetComponent<PlyMovementSync>().rotation);
-						player.SetCurrentItemIndex(0);
+
+						Timing.Next(() =>
+						{
+							player.GiveItem(ItemType.E11_STANDARD_RIFLE);
+							player.GiveItem(ItemType.MEDKIT);
+							player.GiveItem(ItemType.FRAG_GRENADE);
+
+							player.SetAmmo(AmmoType.DROPPED_5, 300);
+							player.SetAmmo(AmmoType.DROPPED_7, 300);
+							player.SetAmmo(AmmoType.DROPPED_9, 300);
+						});
+
+						// maybe equip their gun here?
 					}, 0.2f);
 					// fix rotation
 				}
@@ -76,14 +95,6 @@ namespace Deathmatch
 				{
 					player.ChangeRole(fightRole, false, false);
 				}
-
-				player.GiveItem(ItemType.E11_STANDARD_RIFLE);
-				player.GiveItem(ItemType.MEDKIT);
-				player.GiveItem(ItemType.FRAG_GRENADE);
-
-				player.SetAmmo(AmmoType.DROPPED_5, 300);
-				player.SetAmmo(AmmoType.DROPPED_7, 300);
-				player.SetAmmo(AmmoType.DROPPED_9, 300);
 			}
 		}
 
@@ -99,20 +110,34 @@ namespace Deathmatch
 			}, gracePeriod);
 		}
 
+		private void VerifyPlayerList()
+		{
+			for (int i = 0; i < Plugin.pKills.Count; i++)
+			{
+				string id = Plugin.pKills.Keys.ElementAt(i);
+				if (FindPlayer(id) == null) Plugin.pKills.Remove(id);
+			}
+		}
+
 		private void UpdateLeaderboard()
 		{
-			foreach (Player player in Plugin.pKills.Select(x => FindPlayer(x.Key)).Where(x => x == null))
-				Plugin.pKills.Remove(player.SteamId);
+			VerifyPlayerList();
 
 			if (Plugin.pKills.Count > 0)
 			{
+				if (Plugin.pKills.Count <= 1)
+				{
+					// Game has too little players, cannot continue
+					ForceEndRound();
+					return;
+				}
 				Plugin.pKills = Plugin.pKills.OrderByDescending(x => x.Value).ToDictionary(x => x.Key, x => x.Value);
 
-				broadcast.CallRpcAddElement(
+				PluginManager.Manager.Server.Map.Broadcast(Convert.ToUInt32(leaderboardUpdateTime),
 					$"<color=#AA9000>1) {FindPlayer(Plugin.pKills.ElementAt(0).Key).Name}: {Plugin.pKills.ElementAt(0).Value}</color>" +
 					(Plugin.pKills.Count > 1 ? $"<color=#888888>\n2) {FindPlayer(Plugin.pKills.ElementAt(1).Key).Name}: {Plugin.pKills.ElementAt(1).Value}</color>" +
 					(Plugin.pKills.Count > 2 ? $"<color=#AA5D00>\n3) {FindPlayer(Plugin.pKills.ElementAt(2).Key).Name}: {Plugin.pKills.ElementAt(2).Value}</color>" : "") : ""),
-					Convert.ToUInt32(leaderboardUpdateTime), false);
+					false);
 			}
 			if (Plugin.isDeathmatch)
 				Timing.In(x => UpdateLeaderboard(), leaderboardUpdateTime);
@@ -135,13 +160,11 @@ namespace Deathmatch
 				.Where(x => x.Name.ToUpper().Contains("CHECKPOINT") || x.Name.ToUpper().Contains("GATE")))
 				door.Locked = true;
 
-			foreach (Pickup item in Object.FindObjectsOfType<Pickup>())
-				item.Delete();
+			CleanItems();
 
-			broadcast = Object.FindObjectOfType<Broadcast>();
 			cassie = PlayerManager.localPlayer.GetComponent<MTFRespawn>();
 
-			broadcast.CallRpcAddElement(BroadcastExplanation, 15, false);
+			PluginManager.Manager.Server.Map.Broadcast(15, BroadcastExplanation, false);
 
 			foreach (Player player in PluginManager.Manager.Server.GetPlayers())
 			{

@@ -35,7 +35,7 @@ namespace Deathmatch
 		{
 			instance = this;
 
-			Timing.Init(this, Smod2.Events.Priority.Normal, false);
+			Timing.Init(this);
 
 			AddEventHandlers(new EventHandler(), Smod2.Events.Priority.High);
 			// Doing this to allow me to override other plugins potentially blocking friendly fire damage,
@@ -43,7 +43,7 @@ namespace Deathmatch
 
 			AddCommands(new[] { "deathmatch", "dm" }, new CommandHandler());
 
-			AddConfig(new ConfigSetting("dm_start_delay", 30f, SettingType.FLOAT, true, "Time until the round starts."));
+			AddConfig(new ConfigSetting("dm_start_delay", 30f, SettingType.FLOAT, true, "Time until the round starts. Must be greater than 10 seconds."));
 			AddConfig(new ConfigSetting("dm_grace_period", 5f, SettingType.FLOAT, true, "Time until a player gets a gun after a respawn."));
 			AddConfig(new ConfigSetting("dm_respawn_time", 8f, SettingType.FLOAT, true, "Time until a player respawns."));
 			AddConfig(new ConfigSetting("dm_round_length", 600, SettingType.NUMERIC, true, "Time in seconds of the round."));
@@ -58,7 +58,7 @@ namespace Deathmatch
 			AddConfig(new ConfigSetting("dm_allow_dropin", true, SettingType.BOOL, true, "Allow players to join the game mid round."));
 			AddConfig(new ConfigSetting("dm_medkit_on_kill", true, SettingType.BOOL, true, "Give players a medkit after a kill if they don't have one."));
 			AddConfig(new ConfigSetting("dm_lobby_role", 15, SettingType.NUMERIC, true, "Role ID for players to be before the fight starts."));
-			AddConfig(new ConfigSetting("dm_fight_role", 14, SettingType.NUMERIC, true, "Role ID for players to fight as."));
+			AddConfig(new ConfigSetting("dm_fight_role", 6, SettingType.NUMERIC, true, "Role ID for players to fight as."));
 		}
 	}
 }

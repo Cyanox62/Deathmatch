@@ -5,16 +5,14 @@ using Smod2.API;
 using Smod2.Events;
 using Smod2.EventHandlers;
 using System.Linq;
-using Object = UnityEngine.Object;
-using UnityEngine;
 using Smod2.EventSystem.Events;
 
 namespace Deathmatch
 {
 	public partial class EventHandler : IEventHandlerRoundStart, IEventHandlerPlayerJoin, IEventHandlerCheckRoundEnd,
-		IEventHandlerPlayerHurt, IEventHandlerPlayerDie, IEventHandlerTeamRespawn, IEventHandlerWaitingForPlayers
+		IEventHandlerPlayerHurt, IEventHandlerPlayerDie, IEventHandlerTeamRespawn, IEventHandlerWaitingForPlayers,
+		IEventHandlerSetRole
 	{
-		private Broadcast broadcast;
 		private MTFRespawn cassie;
 
 		private const float cassieDelay = 7.6f;
@@ -41,8 +39,9 @@ namespace Deathmatch
 			$"When the round starts you will turn into a different role and will be given weapons. " +
 			$"Your goal is to kill as many other players as you can before time runs out! " +
 			$"If you die, there will be a short respawn time, you will also have a short " +
-			$"grace period after you spawn. You will be told how many at every time you get" +
-			$" a kill in this console. When time runs out, whoever has the most kills wins!\n" +
+			$"grace period after you spawn where you are invincible. You will be told how " +
+			$"many at every time you get a kill in this console. When time runs out, whoever " +
+			$"has the most kills wins!\n" +
 			$"Good Luck!";
 
 		public void OnWaitingForPlayers(WaitingForPlayersEvent ev)
@@ -81,10 +80,14 @@ namespace Deathmatch
 		{
 			if (Plugin.isToggled && allowDropIn && Plugin.isRoundStarted)
 			{
-				if (Plugin.isDeathmatch)
-					SpawnPlayer(ev.Player, true);
-				else
-					ev.Player.ChangeRole(lobbyRole, false);
+				Timing.In(x =>
+				{
+					if (Plugin.isDeathmatch)
+						SpawnPlayer(ev.Player, true);
+					else
+						ev.Player.ChangeRole(lobbyRole, false);
+					ev.Player.SendConsoleMessage(ConsoleExplanation);
+				}, 3f);
 			}
 		}
 
@@ -97,9 +100,10 @@ namespace Deathmatch
 				if (Plugin.pKills.ContainsKey(ev.Killer.SteamId) && ev.Player.SteamId != curAttacker.SteamId)
 				{
 					Plugin.pKills[curAttacker.SteamId]++;
-					curAttacker.SendConsoleMessage($"You now have {Plugin.pKills[ev.Killer.SteamId]} kills.");
+					curAttacker.SendConsoleMessage($"You now have {Plugin.pKills[curAttacker.SteamId]} kill{(Plugin.pKills[curAttacker.SteamId] > 1 ? "s" : "")}.");
 
-					if (giveMedkitOnKill && !curAttacker.GetInventory().Any(x => x.ItemType == ItemType.MEDKIT))
+					List<Smod2.API.Item> items = curAttacker.GetInventory();
+					if (giveMedkitOnKill && !items.Any(x => x.ItemType == ItemType.MEDKIT) && items.Count < 8)
 						curAttacker.GiveItem(ItemType.MEDKIT);
 				}
 
@@ -111,11 +115,16 @@ namespace Deathmatch
 			}
 		}
 
+		public void OnSetRole(PlayerSetRoleEvent ev)
+		{
+			if (Plugin.isToggled) ev.Items.Clear();
+		}
+
 		public void OnPlayerHurt(PlayerHurtEvent ev)
 		{
 			if (Plugin.isToggled && Plugin.isDeathmatch)
 			{
-				// ensure other plugins dont cancel out class damage
+				// Ensure other plugins dont cancel out class damage
 				if (pBlacklist.Contains(ev.Player.SteamId))
 					return;
 				pBlacklist.Add(ev.Player.SteamId);
@@ -141,7 +150,7 @@ namespace Deathmatch
 		public void OnCheckRoundEnd(CheckRoundEndEvent ev)
 		{
 			if (Plugin.isToggled && Plugin.isRoundStarted)
-				ev.Status = ROUND_END_STATUS.ON_GOING; // SET ISROUNDSTARTED TO FALSE WHEN TIME RUNS OUT
+				ev.Status = ROUND_END_STATUS.ON_GOING;
 		}
 	}
 }
